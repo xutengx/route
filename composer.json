@@ -1,0 +1,33 @@
+{
+	"name": "xutengx/route",
+	"description": "route",
+	"keywords": [
+		"route",
+		"xuteng",
+		"gaara"
+	],
+	"license": "MIT",
+	"type": "library",
+	"authors": [
+		{
+			"name": "xuteng",
+			"email": "68822684@qq.com"
+		}
+	],
+	"require": {
+		"php": ">=7.1.0",
+		"xutengx/conf": "dev-master",
+		"xutengx/exception": "dev-master",
+		"xutengx/request": "dev-master"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^7",
+		"phpunit/php-invoker": "^2.0",
+		"phpunit/dbunit": "^4.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Xutengx\\Route\\": "src/"
+		}
+	}
+}
