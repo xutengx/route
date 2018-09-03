@@ -5,12 +5,13 @@ namespace Xuteng\Route\Traits;
 
 use Closure;
 
-/**
- * 设置路由
- */
+
 trait SetRoute {
 
-	// 可用的 http 动作
+	/**
+	 * 可用的http动作
+	 * @var array
+	 */
 	protected $allowMethod = [
 		'get',
 		'post',
@@ -20,7 +21,10 @@ trait SetRoute {
 		'patch',
 		'options'
 	];
-	// 分组时的信息
+	/**
+	 * 分组时的信息
+	 * @var array
+	 */
 	protected $group = [
 		'domain'     => [],
 		'prefix'     => [],
@@ -28,6 +32,10 @@ trait SetRoute {
 		'middleware' => [],
 	];
 
+	/**
+	 * 路由全不匹配时执行, 不会执行任何路由中间件
+	 * @param $action
+	 */
 	public function set404($action): void {
 		$this->rule404 = $action;
 	}

@@ -5,7 +5,7 @@ namespace Xuteng\Route;
 
 use Closure;
 use Generator;
-use Xuteng\Conf\Conf;
+use InvalidArgumentException;
 use Xuteng\Request\Request;
 use Xuteng\Route\Component\MatchedRouting;
 use Xuteng\Route\Traits\SetRoute;
@@ -19,13 +19,13 @@ class Route {
 	/**
 	 * @var null
 	 */
-	public $rule404 = null;
+	public $rule404;
 	// 当前 $pathInfo
 	/**
 	 * 当前 $pathInfo
 	 * @var string
 	 */
-	protected $pathInfo = null;
+	protected $pathInfo;
 	/**
 	 * 全部路由规则
 	 * @var array
@@ -36,47 +36,37 @@ class Route {
 	 * @var Request
 	 */
 	protected $request;
-	/**
-	 * @var Conf
-	 */
-	protected $conf;
 
-	public function __construct(Request $request, Conf $conf) {
-		$this->request = $request;
-		$this->conf    = $conf;
+	/**
+	 * Route constructor.
+	 * @param Request $request
+	 * @param string $routeFile
+	 */
+	public function __construct(Request $request, string $routeFile, MatchedRouting $MatchedRouting) {
+		$this->request   = $request;
+		$fileRule        = require($routeFile);
+		$this->routeRule = is_array($fileRule) ? array_merge($this->routeRule, $fileRule) : $this->routeRule;
 	}
 
 	/**
 	 * 路由匹配
 	 * @return bool
 	 */
-	public function Start(): bool {
+	public function start(): bool {
 		// 得到 $pathInfo
 		$this->pathInfo = $this->getPathInfo();
-		// 引入route规则
-		$this->routeRule = $this->getRouteRule();
 		// 分析路由, 并执行
 		return $this->routeAnalysis();
 	}
 
 	/**
-	 * 分析url,得到pathinfo
+	 * 分析url,得到pathInfo
 	 * eg:http://192.168.64.128/git/php_/project/user/login/123/11?id=12 -> /user/login/123/11
-	 * eg:http://git.gitxt.com/data/upload?id=123 -> /data/upload
+	 * eg:http://www.gaara.com/data/upload?id=123 -> /data/upload
 	 * @return string
 	 */
 	protected function getPathInfo(): string {
 		return $this->request->pathInfo;
-	}
-
-	/**
-	 * 得到当前应该使用的route配置
-	 * 可以接收直接返回的数组格式, 也可以直接执行
-	 * @return array
-	 */
-	protected function getRouteRule(): array {
-		$fileRule = require($this->conf->route['file']);
-		return is_array($fileRule) ? array_merge($this->routeRule, $fileRule) : $this->routeRule;
 	}
 
 	/**
@@ -86,15 +76,14 @@ class Route {
 	 */
 	protected function routeAnalysis(): bool {
 		foreach ($this->pretreatment() as $rule => $info) {
-			// 形参数组
-			$parameter    = [];
-			$pathInfoPreg = $this->ruleToPreg($rule, $parameter);
+			// 路由规则翻译为正则表达式
+			$pathInfoPreg = $this->ruleToPreg($rule, $parameters);
 			// 确定路由匹配
 			if (preg_match($pathInfoPreg, $this->pathInfo, $argument)) {
 				// 确认 url 参数
-				$staticParameter = $this->paramAnalysis($parameter, $argument);
+				$staticParameters = $this->paramAnalysis($parameters, $argument);
 				// 执行分析
-				$check = $this->infoAnalysis($rule, $info, $staticParameter);
+				$check = $this->infoAnalysis($rule, $info, $staticParameters);
 				// 域名不匹配, 则继续 foreach
 				if ($check === false)
 					continue;
@@ -125,23 +114,23 @@ class Route {
 	/**
 	 * 将路由规则翻译为正则表达式
 	 * @param string $rule url规则
-	 * @param array &$param url上的形参组成的一维数组
+	 * @param array &$parameters url上的形参组成的一维数组
 	 * @return string 正则表达式
 	 * @return array $param 形参数组
 	 */
-	protected function ruleToPreg(string $rule = '', array &$param = []): string {
+	protected function ruleToPreg(string $rule = '', array &$parameters = []): string {
 		$temp = explode('/', $rule);
 		foreach ($temp as $k => $v) {
-			$key      = false;
-			$temp[$k] = \preg_replace_callback("/{.*\?}/is", function($matches) use (&$param, &$key) {
-				$param[] = trim(trim($matches[0], '?}'), '{');
-				$key     = true;
+			$flag     = false;
+			$temp[$k] = \preg_replace_callback("/{.*\?}/is", function($matches) use (&$parameters, &$flag) {
+				$parameters[] = trim(trim($matches[0], '?}'), '{');
+				$flag         = true;
 				return '?(/[^/]*)?';
 			}, $v);
-			if ($key)
+			if ($flag)
 				continue;
-			$temp[$k] = \preg_replace_callback("/{.*}/is", function($matches) use (&$param) {
-				$param[] = trim(trim($matches[0], '}'), '{');
+			$temp[$k] = \preg_replace_callback("/{.*}/is", function($matches) use (&$parameters) {
+				$parameters[] = trim(trim($matches[0], '}'), '{');
 				return '([^/]+)';
 			}, $v);
 		}
@@ -167,40 +156,39 @@ class Route {
 	/**
 	 * 执行分析 : 路由别名, 域名分析, 中间件注册, 执行闭包
 	 * @param string $rule 路由匹配段
-	 * @param string|array $info 路由执行段 (可能是形如 'App\index\Contr\IndexContr@indexDo' 或者 闭包, 或者 数组包含以上2钟)
-	 * @param array $staticParameter 静态参数(pathInfo参数)
+	 * @param string|array|Closure $info 路由执行段 (可能是形如 'App\index\Contr\IndexContr@indexDo' 或者 闭包, 或者 数组包含以上2钟)
+	 * @param array $staticParameters 静态参数(pathInfo参数)
 	 * @return bool
 	 */
-	protected function infoAnalysis(string $rule, $info, array $staticParameter = []): bool {
+	protected function infoAnalysis(string $rule, $info, array $staticParameters = []): bool {
 		// 一致化格式
 		$info = $this->unifiedInfo($info);
 
 		// 域名分析
-		if (!is_array($domainParameter = $this->domainToPreg($info['domain'])))
+		if (!is_array($domainParameters = $this->domainToPregAndMatch($info['domain'])))
 			return false;
 
 		// http方法分析
 		if (!in_array(strtolower($this->request->method), $info['method'], true))
 			return false;
 
-		$MR                   = $this->MatchedRouting = new MatchedRouting;
+		$MR                   = $this->MatchedRouting;
 		$MR->alias            = $info['as'] ?? $rule;
 		$MR->middlewareGroups = $info['middleware'];
 		$MR->methods          = $info['method'];
 		$MR->subjectMethod    = $info['uses'];
-		$MR->domainParamter   = $domainParameter;
-		$MR->staticParamter   = $staticParameter;
-		$MR->urlParamter      = array_merge($domainParameter, $staticParameter);
+		$MR->domainParameters = $domainParameters;
+		$MR->staticParameters = $staticParameters;
+		$MR->urlParameters    = array_merge($domainParameters, $staticParameters);
 		return true;
 	}
 
 	/**
 	 * info 一致化格式
-	 * @param mixed $info
+	 * @param string|array $info
 	 * @return array
 	 */
 	protected function unifiedInfo($info): array {
-		$arr = [];
 		if (is_string($info) || $info instanceof Closure) {
 			$arr = [
 				'method'     => $this->allowMethod,
@@ -219,6 +207,8 @@ class Route {
 				'uses'       => $info['uses']
 			];
 		}
+		else
+			throw new InvalidArgumentException();
 		return $arr;
 	}
 
@@ -227,7 +217,7 @@ class Route {
 	 * @param string $rule 域名规则 eg: {admin}.{gitxt}.com
 	 * @return array|false
 	 */
-	protected function domainToPreg(string $rule = '') {
+	protected function domainToPregAndMatch(string $rule = '') {
 		$param = [];
 		$preg  = \preg_replace_callback("/{[^\.]*}/is", function($matches) use (&$param) {
 			$param[trim(trim($matches[0], '}'), '{')] = null;
