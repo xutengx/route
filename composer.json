@@ -16,8 +16,6 @@
 	],
 	"require": {
 		"php": ">=7.1.0",
-		"xutengx/conf": "dev-master",
-		"xutengx/exception": "dev-master",
 		"xutengx/request": "dev-master"
 	},
 	"require-dev": {
