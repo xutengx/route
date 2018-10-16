@@ -16,7 +16,9 @@
 	],
 	"require": {
 		"php": ">=7.1.0",
-		"xutengx/request": "dev-master"
+		"xutengx/request": "dev-master",
+		"xutengx/tool": "dev-master",
+		"xutengx/exception": "dev-master"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "^7",

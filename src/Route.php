@@ -42,6 +42,7 @@ class Route {
 	 * Route constructor.
 	 * @param Request $request
 	 * @param string $routeFile
+	 * @param MatchedRouting $MatchedRouting
 	 */
 	public function __construct(Request $request, string $routeFile, MatchedRouting $MatchedRouting) {
 		$this->request        = $request;
