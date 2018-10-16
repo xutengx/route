@@ -1,14 +1,14 @@
 <?php
 
 declare(strict_types = 1);
-namespace Xuteng\Route;
+namespace Xutengx\Route;
 
 use Closure;
 use Generator;
 use InvalidArgumentException;
-use Xuteng\Request\Request;
-use Xuteng\Route\Component\MatchedRouting;
-use Xuteng\Route\Traits\SetRoute;
+use Xutengx\Request\Request;
+use Xutengx\Route\Component\MatchedRouting;
+use Xutengx\Route\Traits\SetRoute;
 
 class Route {
 

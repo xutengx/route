@@ -1,12 +1,12 @@
 <?php
 
 declare(strict_types = 1);
-namespace Xuteng\Route\Component;
+namespace Xutengx\Route\Component;
 
 /**
  * 成功匹配的路由对象
  * Class MatchedRouting
- * @package Xuteng\Route\Component
+ * @package Xutengx\Route\Component
  */
 class MatchedRouting {
 

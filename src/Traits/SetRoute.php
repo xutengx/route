@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types = 1);
-namespace Xuteng\Route\Traits;
+namespace Xutengx\Route\Traits;
 
 use Closure;
 
