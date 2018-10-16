@@ -13,14 +13,15 @@ use Xutengx\Route\Traits\SetRoute;
 class Route {
 
 	use SetRoute;
-
-	// 路由配置成功后对象
-	public $MatchedRouting;
 	/**
-	 * @var null
+	 * 路由配置成功后对象
+	 * @var MatchedRouting
+	 */
+	public $matchedRouting;
+	/**
+	 * @var Closure
 	 */
 	public $rule404;
-	// 当前 $pathInfo
 	/**
 	 * 当前 $pathInfo
 	 * @var string
@@ -43,9 +44,10 @@ class Route {
 	 * @param string $routeFile
 	 */
 	public function __construct(Request $request, string $routeFile, MatchedRouting $MatchedRouting) {
-		$this->request   = $request;
-		$fileRule        = require($routeFile);
-		$this->routeRule = is_array($fileRule) ? array_merge($this->routeRule, $fileRule) : $this->routeRule;
+		$this->request        = $request;
+		$fileRule             = require($routeFile);
+		$this->routeRule      = is_array($fileRule) ? array_merge($this->routeRule, $fileRule) : $this->routeRule;
+		$this->matchedRouting = $MatchedRouting;
 	}
 
 	/**
@@ -76,6 +78,8 @@ class Route {
 	 */
 	protected function routeAnalysis(): bool {
 		foreach ($this->pretreatment() as $rule => $info) {
+			// 形参数组
+			$parameters = [];
 			// 路由规则翻译为正则表达式
 			$pathInfoPreg = $this->ruleToPreg($rule, $parameters);
 			// 确定路由匹配
@@ -172,7 +176,7 @@ class Route {
 		if (!in_array(strtolower($this->request->method), $info['method'], true))
 			return false;
 
-		$MR                   = $this->MatchedRouting;
+		$MR                   = $this->matchedRouting;
 		$MR->alias            = $info['as'] ?? $rule;
 		$MR->middlewareGroups = $info['middleware'];
 		$MR->methods          = $info['method'];

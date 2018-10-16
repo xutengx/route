@@ -180,7 +180,7 @@ trait SetRoute {
 
 		// 处理得到 最终 domain
 		{
-			$domain = $_SERVER['HTTP_HOST'];
+			$domain = $_SERVER['HTTP_HOST'] ?? '';
 			if (!empty($actionInfo['domain'])) {
 				$domain = $actionInfo['domain'];
 			}
