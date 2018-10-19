@@ -41,7 +41,7 @@ class MatchedRouting {
 	 */
 	public $staticParameters;
 	/**
-	 * 路由参数(array_merge($domainParam, $staticParamter))
+	 * 路由参数(array_merge($domainParameters, $staticParameters))
 	 * @var
 	 */
 	public $urlParameters;
